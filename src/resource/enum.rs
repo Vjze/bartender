@@ -102,4 +102,5 @@ pub enum Error {
     BtwNoSelect,
     PrinterNoSelect,
     InitNotDone,
+    NetWrongs,
 }

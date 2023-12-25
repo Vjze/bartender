@@ -64,134 +64,152 @@ pub async fn get_libraries() -> Result<String, Error> {
     let url = "http://localhost/BarTender/api/v1/libraries".to_string();
     let client = reqwest::Client::new();
     let mut hm = HashMap::new();
-    let res = client.get(url.clone()).send().await.unwrap();
-    match res.status().is_success() {
-        true => {
-            for (key, val) in res.headers().into_iter() {
-                hm.insert(
-                    key.as_str().to_owned(),
-                    val.to_str().ok().unwrap_or("").to_owned(),
-                );
-            }
-            let req = Req {
-                status: res.status().as_u16(),
-                url: url.clone(),
-                body: res.json().await.unwrap(),
-                headers: hm,
-            };
-            let j = req.body.get(1);
-            match j {
-                Some(j) => {
-                    let j = serde_json::to_string(&j["id"]).unwrap();
-                    let id: String = j
-                        .chars()
-                        .map(|x| match x {
-                            '"' => ' ',
-                            '\\' => ' ',
-                            _ => x,
-                        })
-                        .collect();
-                    return Ok(id);
+    let res = client.get(url.clone()).send().await;
+    match res {
+        Ok(res) => {
+            match res.status().is_success() {
+                true => {
+                    for (key, val) in res.headers().into_iter() {
+                        hm.insert(
+                            key.as_str().to_owned(),
+                            val.to_str().ok().unwrap_or("").to_owned(),
+                        );
+                    }
+                    let req = Req {
+                        status: res.status().as_u16(),
+                        url: url.clone(),
+                        body: res.json().await.unwrap(),
+                        headers: hm,
+                    };
+                    let j = req.body.get(1);
+                    match j {
+                        Some(j) => {
+                            let j = serde_json::to_string(&j["id"]).unwrap();
+                            let id: String = j
+                                .chars()
+                                .map(|x| match x {
+                                    '"' => ' ',
+                                    '\\' => ' ',
+                                    _ => x,
+                                })
+                                .collect();
+                            return Ok(id);
+                        }
+                        None => Err(Error::LibrariesNone),
+                    }
                 }
-                None => Err(Error::LibrariesNone),
+                false => Err(Error::NetWrongs),
             }
         }
-        false => Err(Error::LibrariesNone),
+        Err(_e) => Err(Error::LibrariesNone),
     }
+    
 }
 pub async fn load_printers() -> Result<Vec<Printers>, Error> {
     let url = "http://localhost/BarTender/api/v1/printers".to_string();
     let client = reqwest::Client::new();
     let mut hm = HashMap::new();
-    let res = client.get(url.clone()).send().await.unwrap();
-    match res.status().is_success() {
-        true => {
-            for (key, val) in res.headers().into_iter() {
-                hm.insert(
-                    key.as_str().to_owned(),
-                    val.to_str().ok().unwrap_or("").to_owned(),
-                );
+    let res = client.get(url.clone()).send().await;
+    match res {
+        Ok(res) => {
+            match res.status().is_success() {
+                true => {
+                    for (key, val) in res.headers().into_iter() {
+                        hm.insert(
+                            key.as_str().to_owned(),
+                            val.to_str().ok().unwrap_or("").to_owned(),
+                        );
+                    }
+                    let req = Req {
+                        status: res.status().as_u16(),
+                        url: url.clone(),
+                        body: res.json().await.unwrap(),
+                        headers: hm,
+                    };
+                    let server_printers = req.body.get("serverPrinters").unwrap();
+                    let x = server_printers.as_array().unwrap();
+                    let remote_printers = req.body.get("remotePrinters").unwrap();
+                    let y = remote_printers.as_array().unwrap();
+                    let mut printerlist = vec![];
+                    for i in x {
+                        let j = serde_json::to_string(i).unwrap();
+                        let s: String = j
+                            .chars()
+                            .map(|x| match x {
+                                '"' => ' ',
+                                '\\' => ' ',
+                                _ => x,
+                            })
+                            .collect();
+                        let printer = Printers { printer: s };
+                        printerlist.push(printer);
+                    }
+                    for i in y {
+                        let j = serde_json::to_string(i).unwrap();
+                        let s: String = j
+                            .chars()
+                            .map(|x| match x {
+                                '"' => ' ',
+                                '\\' => ' ',
+                                _ => x,
+                            })
+                            .collect();
+                        let printer = Printers { printer: s };
+                        printerlist.push(printer);
+                    }
+                    Ok(printerlist)
+                }
+                false => Err(Error::NetWrongs),
             }
-            let req = Req {
-                status: res.status().as_u16(),
-                url: url.clone(),
-                body: res.json().await.unwrap(),
-                headers: hm,
-            };
-            let server_printers = req.body.get("serverPrinters").unwrap();
-            let x = server_printers.as_array().unwrap();
-            let remote_printers = req.body.get("remotePrinters").unwrap();
-            let y = remote_printers.as_array().unwrap();
-            let mut printerlist = vec![];
-            for i in x {
-                let j = serde_json::to_string(i).unwrap();
-                let s: String = j
-                    .chars()
-                    .map(|x| match x {
-                        '"' => ' ',
-                        '\\' => ' ',
-                        _ => x,
-                    })
-                    .collect();
-                let printer = Printers { printer: s };
-                printerlist.push(printer);
-            }
-            for i in y {
-                let j = serde_json::to_string(i).unwrap();
-                let s: String = j
-                    .chars()
-                    .map(|x| match x {
-                        '"' => ' ',
-                        '\\' => ' ',
-                        _ => x,
-                    })
-                    .collect();
-                let printer = Printers { printer: s };
-                printerlist.push(printer);
-            }
-            Ok(printerlist)
-        }
-        false => Err(Error::PrinterErr),
+        },
+        Err(_e) => Err(Error::PrinterErr),
     }
+    
 }
 pub async fn load_btws(id: String) -> Result<Vec<Btw>, Error> {
     let url = format!("http://localhost/BarTender/api/v1/libraries/{}", id);
     let client = reqwest::Client::new();
     let mut hm = HashMap::new();
-    let res = client.get(url.clone()).send().await.unwrap();
-    match res.status().is_success() {
-        true => {
-            for (key, val) in res.headers().into_iter() {
-                hm.insert(
-                    key.as_str().to_owned(),
-                    val.to_str().ok().unwrap_or("").to_owned(),
-                );
+    let res = client.get(url.clone()).send().await;
+    match res {
+        Ok(res) => {
+            match res.status().is_success() {
+                true => {
+                    for (key, val) in res.headers().into_iter() {
+                        hm.insert(
+                            key.as_str().to_owned(),
+                            val.to_str().ok().unwrap_or("").to_owned(),
+                        );
+                    }
+                    let req = Req {
+                        status: res.status().as_u16(),
+                        url: url.clone(),
+                        body: res.json().await.unwrap(),
+                        headers: hm,
+                    };
+                    let server_printers = req.body.get("contents").unwrap();
+                    let x = server_printers.as_array().unwrap();
+                    let mut btwlist = vec![];
+                    for i in x {
+                        let j = serde_json::to_string(i).unwrap();
+                        let s: String = j
+                            .chars()
+                            .map(|x| match x {
+                                '"' => ' ',
+                                '\\' => ' ',
+                                _ => x,
+                            })
+                            .collect();
+                        let btws = Btw { btw: s };
+                        btwlist.push(btws);
+                    }
+        
+                    Ok(btwlist)
+                }
+                false => Err(Error::NetWrongs),
             }
-            let req = Req {
-                status: res.status().as_u16(),
-                url: url.clone(),
-                body: res.json().await.unwrap(),
-                headers: hm,
-            };
-            let server_printers = req.body.get("contents").unwrap();
-            let x = server_printers.as_array().unwrap();
-            let mut btwlist = vec![];
-            for i in x {
-                let j = serde_json::to_string(i).unwrap();
-                let s: String = j
-                    .chars()
-                    .map(|x| match x {
-                        '"' => ' ',
-                        '\\' => ' ',
-                        _ => x,
-                    })
-                    .collect();
-                let btws = Btw { btw: s };
-                btwlist.push(btws);
-            }
-
-            Ok(btwlist)
-        }
-        false => Err(Error::BtwErr),
+        },
+        Err(_) => Err(Error::BtwErr),
     }
+    
 }

@@ -71,7 +71,7 @@ impl Application for Bartender {
             Command::batch([
                 font_command.map(Message::FontLoaded),
                 Command::perform(init_all(), Message::Loaded),
-                Command::perform(sql_init(sqlpath.to_string()), Message::SqlInit)
+                Command::perform(sql_init(sqlpath.to_string()), Message::SqlInit),
             ]),
         )
     }
@@ -98,13 +98,13 @@ impl Application for Bartender {
                         })
                     }
                     Message::Loaded(Err(e)) => {
-                            *self = Bartender::Loaded(State {
-                                model: true,
-                                tips: e,
-                                status: "错误！！！！".to_string(),
-                                ..State::default()
-                            })
-                        }
+                        *self = Bartender::Loaded(State {
+                            model: true,
+                            tips: e,
+                            status: "错误！！！！".to_string(),
+                            ..State::default()
+                        })
+                    }
                     _ => {}
                 }
                 Command::none()
@@ -159,7 +159,6 @@ impl Application for Bartender {
                     },
                     Message::SqlResultBack(res) => match res {
                         Ok(r) => {
-                            
                             state.list = r;
                             let librarie = state.librarie.clone();
                             let list = state.list.clone();
@@ -353,6 +352,7 @@ impl Application for Bartender {
                     Error::BtwNoSelect => "未选择标签模板,请先选择模板再进行打印!!!",
                     Error::PrinterNoSelect => "未选择打印机,请先选择打印机再进行打印!!!",
                     Error::InitNotDone => "软件自检未通过,请检查数据库是否正常连接....",
+                    Error::NetWrongs => "网络异常！！！！",
                 };
                 let all_tip = tip(*model, container(col), body);
                 container(all_tip).padding(15).into()
